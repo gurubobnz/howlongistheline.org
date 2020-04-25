@@ -17,7 +17,7 @@ function Stocks({ details, additional, history }) {
     const [itemName, setItemName] = useState("")
 
     function renderStocks() {
-        if(additional.outofStock == undefined){
+        if (additional.outofStock == undefined) {
             return (
                 <ListItem>
                     No data for this shop right now
@@ -28,25 +28,37 @@ function Stocks({ details, additional, history }) {
         return stocks.reverse().map((stock, idx) => {
             return (
                 <ListItem key={idx}>
-                    {stock.name} is out of stock 
-                    <div className="right">{moment(stock.time).fromNow()}</div>
+                    <div className="left">{stock.name} { stock.refilled ? "is back in stock":"is out of stock" }</div>
+                    <div className="center">{ stock.refilled ? moment(stock.refillTime).fromNow() : moment(stock.time).fromNow()}</div>
+                    <div className="right">
+                    { stock.refilled ? <div style={{color: "green"}}> Back in stock! </div> :
+                        <Button onClick={() => {
+                            Meteor.call('Outofstock.refilled', details._id, stock, (err, result) => {
+                                if (err) {
+                                    console.log(err)
+                                    return
+                                }
+                            })
+                        }}>It is back in stock!</Button>}
+                    </div>
                 </ListItem>
             )
         })
     }
 
-    function addStock(){
-        if (itemName == "") {
-            toast("please enter the item Name");
+    function addStock() {
+        sanitisedName = itemName.replace(/[^0-9a-zA-Z ]/g, ''); // Remove non-alphanumerics
+        if (sanitisedName == "" || sanitisedName.length < 3) {
+            toast("Please enter a meaningful description.");
             console.log(err)
             return
         }
-        Meteor.call("Outofstock.insert", details._id, itemName, (err, result) => {
+        Meteor.call("Outofstock.insert", details._id, sanitisedName, (err, result) => {
             if (err) {
-                toast("an error occurred when adding the comment")
+                toast("An error occurred while adding your item.")
                 return
             }
-            toast("success!")
+            toast("Success! Thank you.")
             setItemName("")
         })
 
